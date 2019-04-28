@@ -42,16 +42,12 @@ class Perceptron():
         np.save('biases.npy',b)
     def predict(self,image):
         w,b = self.load()
-        w = np.array(w)
         m = image.shape[1]
-        w = w.reshape((image.shape[0],1))
+        w = w.reshape((image.shape[0],-1))
         Y_prediction = np.zeros((1,m))
         A = self.sigmoid(np.dot(w.T,image)+b)
         for i in range(A.shape[1]):
-            if A[0,i] >0.5:
-                Y_prediction[0,i] =1
-            else:
-                Y_prediction[0,i] =0
+            Y_prediction[0,i] =A[0,i]
         print(Y_prediction)
         return Y_prediction
     
@@ -74,6 +70,10 @@ x_train, y_train = shuffle(x_train, y_train, random_state = 0)
 x_train_flatten = x_train.reshape(x_train.shape[0], -1).T
 x_train = x_train_flatten / 255
 pct = Perceptron(x_train,y_train)
-pct.optimize()
-# pd_img = cv2.imread('E:\\dog-or-cat\\predict\\5800.jpg')
-# pct.predict(pd_img)
+# pct.optimize()
+pd_img = cv2.imread('E:\\dog-or-cat\\dataset\\train\\small_train\\cat.1.jpg')
+pd_img = cv2.resize(pd_img,(64,64))
+pd_img = np.array(pd_img)
+predict_imgs_flatten = pd_img.reshape(pd_img.shape[0],-1).T
+pd_img = predict_imgs_flatten/255
+pct.predict(pd_img)
