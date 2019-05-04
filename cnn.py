@@ -71,7 +71,8 @@ class ConvolutionalNeuralNetwork():
             dim *= feature_map.shape[i]
         return feature_map.reshape(dim,)
     def loss(self,y_hat,y):
-        return -np.mean(np.log(y_hat[y]))
+        m = self.x_train.shape[1]
+        return (-1/m)*np.sum(y*np.log(y_hat)+(1-y)*np.log(1-y_hat))
     def initialize(self,d0,d1,d2):
         x_train =self.x_train
         y_train =self.y_train
@@ -89,28 +90,23 @@ class ConvolutionalNeuralNetwork():
         
         return l2_feature_map_relu_pooling_flatten,y_train,w1,b1,w2,b2
     def optimize(self,learningRate=0.005,steps=2000):
-        x,y,w1,b1,w2,b2 = self.initialize(23217,128,1)
-        
+        x,y,w1,b1,w2,b2 = self.initialize(423384,128,1)
+        print('w2 shape',w2.shape)
         costs =[]
         for i in range(steps):
             z1 = x.dot(w1)*b1
             a1 = np.maximum(z1,0)
-            print(a1.shape)
             z2 = a1.dot(w2) +b2
-            print(z2.shape)
             y_hat = self.sigmoid(z2)
-            print('yhat',y_hat)
             if i%100 ==0:
                 cost = self.loss(y_hat,y)
                 print('cost after %d: %f' %(i,cost))
                 costs.append(cost)
-            
-            y_hat[y] -=1
             e2 = y_hat/len(y_hat)
-            dw2 = np.dot(a1,e2)
+            dw2 = np.dot(a1.reshape(-1,1),e2.reshape(-1,1))
             db2 = np.sum(e2,axis=0)
             e1 = np.dot(e2,w2.T) * self.sigmoid_prime(z1)
-            dw1 = np.dot(X.T,e1)
+            dw1 = np.dot(x.reshape(-1,1),e1.reshape(-1,1).T)
             db1 = np.sum(e1,axis=0)
 
             w1 -= learningRate*dw1
@@ -118,11 +114,25 @@ class ConvolutionalNeuralNetwork():
             w2 -= learningRate*dw2
             b2 -= learningRate*db2
         return w1,b1,w2,b2,costs
-
-x_train = skimage.data.chelsea()
-x_train = skimage.color.rgb2gray(x_train)
+import cv2
+from sklearn.utils import shuffle
+x_train,y_train = [],[]
+for i in range(100):
+    img = cv2.imread('C:\\Users\\Hi-XV\\Desktop\\dogs-vs-cats-redux-kernels-edition\\train\\cat.' + str(i) + '.jpg')
+    img = cv2.resize(img,(64,64))
+    x_train.append(img)
+    y_train.append(0)
+for i in range(100):
+    img = cv2.imread('C:\\Users\\Hi-XV\\Desktop\\dogs-vs-cats-redux-kernels-edition\\train\\dog.' + str(i) + '.jpg')
+    img = cv2.resize(img,(64,64))
+    x_train.append(img)
+    y_train.append(1)
 x_train = np.array(x_train)
-print(x_train.shape)
+y_train = np.array(y_train)
+y_train = y_train.reshape(-1, 1)
+x_train, y_train = shuffle(x_train, y_train, random_state = 0)
+x_train_flatten = x_train.reshape(x_train.shape[0], -1).T
+x_train = x_train_flatten / 255
 l1_filter = np.zeros((2,3,3))
 l1_filter[0,:,:] = np.array([[
     [-1,0,-1],
@@ -134,7 +144,6 @@ l1_filter[1,:,:] = np.array([[
     [0,0,0],
     [-1,-1,-1]
 ]])
-y_train = np.array([0])
 # l1_feature_map_relu_pooling = pooling(relu(conv(x_train,l1_filter)))
 # l2_filter = np.random.rand(3,5,5,l1_feature_map_relu_pooling.shape[-1])
 # l2_feature_map_relu_pooling = pooling(relu(conv(l1_feature_map_relu_pooling,l2_filter)))
