@@ -53,13 +53,13 @@ class Perceptron():
     
 
 x_train,y_train = [],[]
-for i in range(500):
-    img = cv2.imread('E:\\dog-or-cat\\dataset\\train\\small_train\\cat.' + str(i) + '.jpg')
+for i in range(1):
+    img = cv2.imread('E:\\dog-or-cat\\dataset\\train\\training\\cat.' + str(i) + '.jpg')
     img = cv2.resize(img,(64,64))
     x_train.append(img)
     y_train.append(0)
-for i in range(500):
-    img = cv2.imread('E:\\dog-or-cat\\dataset\\train\\small_train\\dog.' + str(i) + '.jpg')
+for i in range(1):
+    img = cv2.imread('E:\\dog-or-cat\\dataset\\train\\training\\dog.' + str(i) + '.jpg')
     img = cv2.resize(img,(64,64))
     x_train.append(img)
     y_train.append(1)
@@ -71,7 +71,7 @@ x_train_flatten = x_train.reshape(x_train.shape[0], -1).T
 x_train = x_train_flatten / 255
 pct = Perceptron(x_train,y_train)
 # pct.optimize()
-pd_img = cv2.imread('E:\\dog-or-cat\\dataset\\train\\small_train\\cat.1.jpg')
+pd_img = cv2.imread('E:\\dog-or-cat\\dataset\\train\\training\\dog.0.jpg')
 pd_img = cv2.resize(pd_img,(64,64))
 pd_img = np.array(pd_img)
 predict_imgs_flatten = pd_img.reshape(pd_img.shape[0],-1).T

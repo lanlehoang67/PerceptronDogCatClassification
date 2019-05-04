@@ -4,14 +4,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class ConvolutionalNeuralNetwork():
-    def __init__(self,x_train,l1_filter):
+    def __init__(self,x_train,y_train,l1_filter):
         self.x_train = x_train
         self.y_train = y_train
         self.l1_filter = l1_filter
-        self.w = np.zeros((x_train.shape[0],1))
-        self.b =0
     def sigmoid(self,input):
         return 1/(1+np.exp(-input))
+    def sigmoid_prime(self,input):
+        s = 1/(1+np.exp(-input))
+        return np.dot(s,1-s)
     def conv(self,x_train,conv_filter):
         if len(x_train.shape) > 2 or len(conv_filter.shape) > 3: 
             if x_train.shape[-1] != conv_filter.shape[-1]:
@@ -69,37 +70,55 @@ class ConvolutionalNeuralNetwork():
         for i in range(len(feature_map.shape)):
             dim *= feature_map.shape[i]
         return feature_map.reshape(dim,)
-    def optimize(self,learningRate=0.005,steps=2000):
+    def loss(self,y_hat,y):
+        return -np.mean(np.log(y_hat[y]))
+    def initialize(self,d0,d1,d2):
         x_train =self.x_train
         y_train =self.y_train
-        w = self.w
-        b= self.b
+        w1 = 0.01*np.random.randn(d0,d1)
+        b1 = np.zeros(d1)
+        w2 = 0.01*np.random.randn(d1,d2)
+        b2 = np.zeros(d2)
+        print(x_train.shape)
         l1_feature_map_relu_pooling =self.pooling(self.relu(self.conv(x_train,self.l1_filter)))
+        print(l1_feature_map_relu_pooling.shape)
         self.l2_filter = np.random.rand(3,5,5,l1_feature_map_relu_pooling.shape[-1])
         l2_feature_map_relu_pooling = self.pooling(self.relu(self.conv(l1_feature_map_relu_pooling,self.l2_filter)))
+        print('before flatten',l2_feature_map_relu_pooling.shape)
         l2_feature_map_relu_pooling_flatten = self.flatten(l2_feature_map_relu_pooling)
-        A = self.relu(self.forward(l2_feature_map_relu_pooling_flatten,self.w,self.b))
-        Y_hat = self.sigmoid(A,self.w,self.b)
+        
+        return l2_feature_map_relu_pooling_flatten,y_train,w1,b1,w2,b2
+    def optimize(self,learningRate=0.005,steps=2000):
+        x,y,w1,b1,w2,b2 = self.initialize(23217,128,1)
+        
         costs =[]
         for i in range(steps):
-            dw,db,cost = self.backward(x_train,y_train,w,b)
-            w = w - learningRate*dw
-            b = b - learningRate*db
-            if i%100 =0:
-                print('cost after %i: %f',%i(i,cost))
+            z1 = x.dot(w1)*b1
+            a1 = np.maximum(z1,0)
+            print(a1.shape)
+            z2 = a1.dot(w2) +b2
+            print(z2.shape)
+            y_hat = self.sigmoid(z2)
+            print('yhat',y_hat)
+            if i%100 ==0:
+                cost = self.loss(y_hat,y)
+                print('cost after %d: %f' %(i,cost))
                 costs.append(cost)
-        return w,b,cost
+            
+            y_hat[y] -=1
+            e2 = y_hat/len(y_hat)
+            dw2 = np.dot(a1,e2)
+            db2 = np.sum(e2,axis=0)
+            e1 = np.dot(e2,w2.T) * self.sigmoid_prime(z1)
+            dw1 = np.dot(X.T,e1)
+            db1 = np.sum(e1,axis=0)
 
-    def forward(self,input,w,b):
-        return np.dot(input,w)+b
-    def backward(self,X,Y,w,b):
-        A = self.sigmoid(np.dot(w.T,X) +b)
-        m = X.shape[1]
-        dw = np.dot(X, (A - Y).T) / m
-        db = np.sum(A-Y)/m
-        cost = (-1  / m) * np.sum(Y * np.log(A) + (1 - Y) * np.log(1 - A))
-        return dw,db,cost
-        
+            w1 -= learningRate*dw1
+            b1 -= learningRate*db1
+            w2 -= learningRate*dw2
+            b2 -= learningRate*db2
+        return w1,b1,w2,b2,costs
+
 x_train = skimage.data.chelsea()
 x_train = skimage.color.rgb2gray(x_train)
 x_train = np.array(x_train)
@@ -115,8 +134,9 @@ l1_filter[1,:,:] = np.array([[
     [0,0,0],
     [-1,-1,-1]
 ]])
+y_train = np.array([0])
 # l1_feature_map_relu_pooling = pooling(relu(conv(x_train,l1_filter)))
 # l2_filter = np.random.rand(3,5,5,l1_feature_map_relu_pooling.shape[-1])
 # l2_feature_map_relu_pooling = pooling(relu(conv(l1_feature_map_relu_pooling,l2_filter)))
-cnn = ConvolutionalNeuralNetwork(x_train,l1_filter)
+cnn = ConvolutionalNeuralNetwork(x_train,y_train,l1_filter)
 cnn.optimize()
