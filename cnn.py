@@ -71,8 +71,8 @@ class ConvolutionalNeuralNetwork():
             dim *= feature_map.shape[i]
         return feature_map.reshape(dim,)
     def loss(self,y_hat,y):
-        m = self.x_train.shape[1]
-        return (-1/m)*np.sum(y*np.log(y_hat)+(1-y)*np.log(1-y_hat))
+        m = 423384
+        return -(np.sum(y*np.log(y_hat)+(1-y)*np.log(1-y_hat)))
     def initialize(self,d0,d1,d2):
         x_train =self.x_train
         y_train =self.y_train
@@ -85,14 +85,14 @@ class ConvolutionalNeuralNetwork():
         print(l1_feature_map_relu_pooling.shape)
         self.l2_filter = np.random.rand(3,5,5,l1_feature_map_relu_pooling.shape[-1])
         l2_feature_map_relu_pooling = self.pooling(self.relu(self.conv(l1_feature_map_relu_pooling,self.l2_filter)))
-        print('before flatten',l2_feature_map_relu_pooling.shape)
         l2_feature_map_relu_pooling_flatten = self.flatten(l2_feature_map_relu_pooling)
-        
+        print('after flatten',l2_feature_map_relu_pooling_flatten.shape)
         return l2_feature_map_relu_pooling_flatten,y_train,w1,b1,w2,b2
-    def optimize(self,learningRate=0.005,steps=2000):
-        x,y,w1,b1,w2,b2 = self.initialize(423384,128,1)
+    def optimize(self,learningRate=0.005,steps=500):
+        x,y,w1,b1,w2,b2 = self.initialize(23217,128,1)
         print('w2 shape',w2.shape)
         costs =[]
+        j =0
         for i in range(steps):
             z1 = x.dot(w1)*b1
             a1 = np.maximum(z1,0)
@@ -114,6 +114,12 @@ class ConvolutionalNeuralNetwork():
             w2 -= learningRate*dw2
             b2 -= learningRate*db2
         return w1,b1,w2,b2,costs
+    def predict(self,img):
+        w1,b1,w2,b2,costs = self.optimize()
+        img = self.flatten(self.pooling(self.relu(self.conv(self.pooling(self.relu(self.conv(img,self.l1_filter))),self.l2_filter))))
+        a1 = self.relu(np.dot(img,w1)+b1)
+        y_hat = self.sigmoid(a1*w2+b2)
+        print(y_hat)
 import cv2
 from sklearn.utils import shuffle
 x_train,y_train = [],[]
@@ -133,6 +139,9 @@ y_train = y_train.reshape(-1, 1)
 x_train, y_train = shuffle(x_train, y_train, random_state = 0)
 x_train_flatten = x_train.reshape(x_train.shape[0], -1).T
 x_train = x_train_flatten / 255
+# img = skimage.data.chelsea()
+# x_train = skimage.color.rgb2gray(img)
+# y_train = np.array([0])
 l1_filter = np.zeros((2,3,3))
 l1_filter[0,:,:] = np.array([[
     [-1,0,-1],
@@ -148,4 +157,4 @@ l1_filter[1,:,:] = np.array([[
 # l2_filter = np.random.rand(3,5,5,l1_feature_map_relu_pooling.shape[-1])
 # l2_feature_map_relu_pooling = pooling(relu(conv(l1_feature_map_relu_pooling,l2_filter)))
 cnn = ConvolutionalNeuralNetwork(x_train,y_train,l1_filter)
-cnn.optimize()
+cnn.predict(img)
